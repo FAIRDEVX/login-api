@@ -10,7 +10,7 @@ const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
 var jwt = require("jsonwebtoken");
-const secret = "";
+const secret = "Test-Login-2023";
 
 app.use(cors());
 
@@ -53,15 +53,31 @@ app.post("/login", jsonParser, function (req, res, next) {
         res.json({ status: "error", message: "no user found" });
       }
       // Load hash from your password DB.
-      bcrypt.compare(req.body.password, users[0].password).then(function (isLogin) {
-        if (isLogin) {
-            res.json({status: 'ok', message: 'Login success'})
-        }   else {
-            res.json({status: 'error', message: 'Login failed'})
-        }
-      });
+      bcrypt
+        .compare(req.body.password, users[0].password)
+        .then(function (isLogin) {
+          if (isLogin) {
+            var token = jwt.sign({ email: users[0].email }, secret, {
+              expiresIn: "1h",
+            });
+            res.json({ status: "ok", message: "Login success", token });
+          } else {
+            res.json({ status: "error", message: "Login failed" });
+          }
+        });
     }
   );
+});
+
+app.post("/authen", jsonParser, function (req, res, next) {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    // verify a token symmetric - synchronous
+    var decoded = jwt.verify(token, secret)
+    res.json({status: 'ok', decoded})
+  } catch (err) {
+    res.json({status: 'error', message: err.message})
+  }
 });
 
 app.listen(3333, function () {
